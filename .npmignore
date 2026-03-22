@@ -1,0 +1,7 @@
+src/
+tsconfig.json
+.env
+.DS_Store
+*.tgz
+.homebridge/
+node_modules/

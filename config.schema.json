@@ -1,0 +1,46 @@
+{
+  "pluginAlias": "ClearlightSauna",
+  "pluginType": "accessory",
+  "singular": false,
+  "headerDisplay": "Control your Clearlight/Jacuzzi infrared sauna via local LAN.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "title": "Name",
+        "type": "string",
+        "default": "Sauna",
+        "required": true
+      },
+      "host": {
+        "title": "Sauna IP Address (optional)",
+        "type": "string",
+        "description": "IP address of your sauna. Leave blank to auto-discover via UDP broadcast."
+      },
+      "maxTemp": {
+        "title": "Maximum Temperature (Celsius)",
+        "type": "number",
+        "default": 66,
+        "minimum": 40,
+        "maximum": 82,
+        "description": "Maximum target temperature in Celsius (default 66C / 150F)."
+      },
+      "minTemp": {
+        "title": "Minimum Temperature (Celsius)",
+        "type": "number",
+        "default": 16,
+        "minimum": 10,
+        "maximum": 40,
+        "description": "Minimum target temperature in Celsius (default 16C / 60F)."
+      },
+      "pollingInterval": {
+        "title": "Polling Interval (seconds)",
+        "type": "number",
+        "default": 10,
+        "minimum": 5,
+        "maximum": 60,
+        "description": "How often to poll sauna state."
+      }
+    }
+  }
+}
