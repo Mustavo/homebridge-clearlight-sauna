@@ -13,8 +13,8 @@ Each entry captures what changed, why, and the decision source.
 - **UDP discovery** -- finds sauna on LAN automatically, saves IP to .env.
 
 ### Protocol
-- **Gizwits GAgent binary protocol** reverse-engineered and validated against device at 192.168.1.73
-- **Passcode**: 12 bytes (docs said 10), ASCII `JRIVOMFGBK`
+- **Gizwits GAgent binary protocol** reverse-engineered and validated against device at 192.168.x.x
+- **Passcode**: 12 bytes (docs said 10), negotiated dynamically per device
 - **State byte order** (confirmed from reference + live testing): flags, LED, RIGHT, LEFT, SET_TEMP, SET_HOUR, SET_MINUTE, PRE_TIME_HOUR, PRE_TIME_MINUTE, SN, CURRENT_TEMP, heart_pulse
 - **Control format**: 13-byte payload with type selector byte (0x00=flag, 0x03=spectrum, 0x04=temp, etc.), one attribute per command, requires 4-byte sequence number in frame
 - **Timing**: device processes controls async, 0x94 ACK arrives after ~2-4s, state update follows

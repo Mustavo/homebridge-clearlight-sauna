@@ -57,7 +57,7 @@ Add to your Homebridge `config.json` accessories array:
 {
   "accessory": "ClearlightSauna",
   "name": "Sauna",
-  "host": "192.168.1.73",
+  "host": "192.168.1.XXX",
   "minTemp": 16,
   "maxTemp": 66,
   "pollingInterval": 10

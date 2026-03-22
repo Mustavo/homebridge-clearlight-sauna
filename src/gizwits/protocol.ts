@@ -5,7 +5,7 @@
  * Message frame: [0x00 0x00 0x00 0x03] [varint length] [0x00] [cmd hi] [cmd lo] [payload...]
  *
  * State and control formats reverse-engineered from spinrag/node-gizwits reference
- * and validated against Clearlight Sanctuary at 192.168.1.73.
+ * and validated against Clearlight Sanctuary at 192.168.x.x.
  */
 
 // --- Network ports ---

@@ -25,10 +25,10 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bradaurisch/homebridge-clearlight-sauna.git"
+    "url": "https://github.com/Mustavo/homebridge-clearlight-sauna.git"
   },
   "bugs": {
-    "url": "https://github.com/bradaurisch/homebridge-clearlight-sauna/issues"
+    "url": "https://github.com/Mustavo/homebridge-clearlight-sauna/issues"
   },
   "engines": {
     "homebridge": ">=1.6.0",
@@ -41,5 +41,5 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.0"
   },
-  "homepage": "https://github.com/bradaurisch/homebridge-clearlight-sauna"
+  "homepage": "https://github.com/Mustavo/homebridge-clearlight-sauna"
 }
