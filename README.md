@@ -1,8 +1,25 @@
 # homebridge-clearlight-sauna
 
+[![npm](https://img.shields.io/npm/v/homebridge-clearlight-sauna)](https://www.npmjs.com/package/homebridge-clearlight-sauna)
+[![npm downloads](https://img.shields.io/npm/dt/homebridge-clearlight-sauna)](https://www.npmjs.com/package/homebridge-clearlight-sauna)
+[![Homebridge](https://img.shields.io/badge/homebridge-%3E%3D1.6.0-blueviolet)](https://homebridge.io)
+
 Homebridge plugin to control a Clearlight/Jacuzzi infrared sauna via Apple HomeKit and Siri.
 
 Communicates directly with the sauna over your local network using the Gizwits GAgent binary protocol. No cloud, no internet required.
+
+<p align="center">
+  <img src="images/SaunaControls.png" alt="Sauna in Apple Home app" width="300">
+</p>
+
+## Features
+
+- Power on/off and target temperature via Siri or the Home app
+- Internal and external light control
+- Auto-discovers your sauna on the local network (UDP broadcast)
+- Configurable via the Homebridge UI (Settings tab)
+- Standalone CLI for direct sauna control and diagnostics
+- Zero dependencies beyond Homebridge
 
 ## What You Get in HomeKit
 
@@ -14,44 +31,25 @@ Communicates directly with the sauna over your local network using the Gizwits G
 
 LED/chromotherapy is read-only (controlled from the sauna's physical panel).
 
-## CLI Tool
+## Compatibility
 
-Direct sauna control for testing and daily use:
-
-```bash
-npm run sauna -- discover              # find sauna on network, save IP
-npm run sauna -- status                # full state dump
-npm run sauna -- power on              # turn on
-npm run sauna -- power off             # turn off
-npm run sauna -- temp 55               # set target to 55C
-npm run sauna -- light int on          # internal light on
-npm run sauna -- light ext off         # external light off
-npm run sauna -- heater 200 200        # left/right heater intensity
-npm run sauna -- timer 45              # 45 min session
-npm run sauna -- monitor               # live state stream
-```
-
-## Prerequisites
-
-- [Homebridge](https://homebridge.io) installed and running
-- Clearlight/Jacuzzi infrared sauna on the same LAN
-- Sauna has a static IP (set this in your router's DHCP reservations)
+Tested with the Clearlight Sanctuary range. Should work with any Clearlight or Jacuzzi infrared sauna that has the WiFi module (Gizwits GAgent firmware on port 12416). If you've confirmed it working on another model, open an issue and let us know.
 
 ## Install
 
-```bash
-cd /path/to/this/plugin
-npm install
-npm run build
-npm link
+### Via Homebridge UI (recommended)
 
-# Then in your Homebridge directory:
-npm link homebridge-clearlight-sauna
+Search for `clearlight` in the Homebridge UI plugin tab and install.
+
+### Via command line
+
+```bash
+npm install -g homebridge-clearlight-sauna
 ```
 
 ## Configuration
 
-Add to your Homebridge `config.json` accessories array:
+Add to your Homebridge `config.json` accessories array, or configure via the Homebridge UI Settings tab:
 
 ```json
 {
@@ -68,10 +66,27 @@ Add to your Homebridge `config.json` accessories array:
 |-------|----------|---------|-------------|
 | accessory | Yes | - | Must be `"ClearlightSauna"` |
 | name | Yes | `"Sauna"` | Name shown in HomeKit |
-| host | Yes | - | Sauna's static IP address |
+| host | No | Auto-discover | Sauna's IP address. Leave blank to auto-discover via UDP broadcast. A static IP (DHCP reservation) is recommended. |
 | minTemp | No | `16` | Min target temp in Celsius |
 | maxTemp | No | `66` | Max target temp in Celsius (66C = 150F) |
 | pollingInterval | No | `10` | Seconds between state polls |
+
+## CLI Tool
+
+A standalone CLI is included for direct sauna control and diagnostics:
+
+```bash
+npx homebridge-clearlight-sauna discover        # find sauna on network
+npx homebridge-clearlight-sauna status           # full state dump
+npx homebridge-clearlight-sauna power on         # turn on
+npx homebridge-clearlight-sauna power off        # turn off
+npx homebridge-clearlight-sauna temp 55          # set target to 55C
+npx homebridge-clearlight-sauna light int on     # internal light on
+npx homebridge-clearlight-sauna light ext off    # external light off
+npx homebridge-clearlight-sauna heater 200 200   # left/right heater intensity
+npx homebridge-clearlight-sauna timer 45         # 45 min session
+npx homebridge-clearlight-sauna monitor          # live state stream
+```
 
 ## Protocol
 
@@ -86,8 +101,14 @@ Full protocol details in [src/gizwits/protocol.ts](src/gizwits/protocol.ts).
 ## Development
 
 ```bash
+git clone https://github.com/Mustavo/homebridge-clearlight-sauna.git
+cd homebridge-clearlight-sauna
 npm install
 npm run build     # compile TypeScript
 npm run watch     # compile on change
-npm run sauna     # CLI tool
+npm run sauna     # CLI tool (from source)
 ```
+
+## Licence
+
+ISC
