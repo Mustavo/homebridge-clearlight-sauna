@@ -1,45 +1,83 @@
 {
   "pluginAlias": "ClearlightSauna",
-  "pluginType": "accessory",
-  "singular": false,
-  "headerDisplay": "Control your Clearlight/Jacuzzi infrared sauna via local LAN.",
+  "pluginType": "platform",
+  "singular": true,
+  "headerDisplay": "Control your Clearlight/Jacuzzi infrared saunas via local LAN. Saunas are auto-discovered on your network.",
   "schema": {
     "type": "object",
     "properties": {
       "name": {
-        "title": "Name",
+        "title": "Platform Name",
         "type": "string",
-        "default": "Sauna",
+        "default": "Clearlight Sauna",
         "required": true
       },
-      "host": {
-        "title": "Sauna IP Address (optional)",
-        "type": "string",
-        "description": "IP address of your sauna. Leave blank to auto-discover via UDP broadcast."
-      },
-      "maxTemp": {
-        "title": "Maximum Temperature (Celsius)",
+      "discoveryTimeout": {
+        "title": "Discovery Timeout (seconds)",
         "type": "number",
-        "default": 66,
-        "minimum": 40,
-        "maximum": 82,
-        "description": "Maximum target temperature in Celsius (default 66C / 150F)."
+        "default": 5,
+        "minimum": 2,
+        "maximum": 30,
+        "description": "How long to listen for sauna responses during each discovery scan."
+      },
+      "discoveryInterval": {
+        "title": "Discovery Interval (seconds)",
+        "type": "number",
+        "default": 60,
+        "minimum": 10,
+        "maximum": 600,
+        "description": "How often to scan for new saunas on the network."
       },
       "minTemp": {
-        "title": "Minimum Temperature (Celsius)",
+        "title": "Default Minimum Temperature (Celsius)",
         "type": "number",
         "default": 16,
         "minimum": 10,
         "maximum": 40,
-        "description": "Minimum target temperature in Celsius (default 16C / 60F)."
+        "description": "Default minimum target temperature for discovered saunas."
       },
-      "pollingInterval": {
-        "title": "Polling Interval (seconds)",
+      "maxTemp": {
+        "title": "Default Maximum Temperature (Celsius)",
         "type": "number",
-        "default": 10,
-        "minimum": 5,
-        "maximum": 60,
-        "description": "How often to poll sauna state."
+        "default": 66,
+        "minimum": 40,
+        "maximum": 82,
+        "description": "Default maximum target temperature for discovered saunas (66C = 150F)."
+      },
+      "devices": {
+        "title": "Pinned Saunas",
+        "type": "array",
+        "description": "Manually configure saunas by IP address. Leave empty to use auto-discovery only.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "host": {
+              "title": "IP Address",
+              "type": "string",
+              "required": true,
+              "description": "Static IP address of the sauna."
+            },
+            "name": {
+              "title": "Name",
+              "type": "string",
+              "description": "Display name in HomeKit."
+            },
+            "minTemp": {
+              "title": "Minimum Temperature (Celsius)",
+              "type": "number",
+              "minimum": 10,
+              "maximum": 40,
+              "description": "Override default minimum temperature for this sauna."
+            },
+            "maxTemp": {
+              "title": "Maximum Temperature (Celsius)",
+              "type": "number",
+              "minimum": 40,
+              "maximum": 82,
+              "description": "Override default maximum temperature for this sauna."
+            }
+          }
+        }
       }
     }
   }

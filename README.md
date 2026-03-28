@@ -49,27 +49,48 @@ npm install -g homebridge-clearlight-sauna
 
 ## Configuration
 
-Add to your Homebridge `config.json` accessories array, or configure via the Homebridge UI Settings tab:
+Saunas are auto-discovered on your local network. No configuration is required for most users -- just install the plugin and your sauna will appear in HomeKit.
+
+For advanced setups, configure via the Homebridge UI Settings tab, or add to your `config.json` platforms array:
 
 ```json
 {
-  "accessory": "ClearlightSauna",
-  "name": "Sauna",
-  "host": "192.168.1.XXX",
-  "minTemp": 16,
-  "maxTemp": 66,
-  "pollingInterval": 10
+  "platform": "ClearlightSauna",
+  "name": "Clearlight Sauna"
+}
+```
+
+To pin a sauna by IP (useful for multiple saunas or networks without broadcast):
+
+```json
+{
+  "platform": "ClearlightSauna",
+  "name": "Clearlight Sauna",
+  "devices": [
+    { "host": "192.168.1.100", "name": "Gym Sauna" },
+    { "host": "192.168.1.101", "name": "Pool Sauna" }
+  ]
 }
 ```
 
 | Field | Required | Default | Description |
 |-------|----------|---------|-------------|
-| accessory | Yes | - | Must be `"ClearlightSauna"` |
-| name | Yes | `"Sauna"` | Name shown in HomeKit |
-| host | No | Auto-discover | Sauna's IP address. Leave blank to auto-discover via UDP broadcast. A static IP (DHCP reservation) is recommended. |
-| minTemp | No | `16` | Min target temp in Celsius |
-| maxTemp | No | `66` | Max target temp in Celsius (66C = 150F) |
-| pollingInterval | No | `10` | Seconds between state polls |
+| platform | Yes | - | Must be `"ClearlightSauna"` |
+| name | Yes | `"Clearlight Sauna"` | Platform name |
+| discoveryTimeout | No | `5` | Seconds to listen for saunas per scan |
+| discoveryInterval | No | `60` | Seconds between discovery scans |
+| minTemp | No | `16` | Default min target temp in Celsius |
+| maxTemp | No | `66` | Default max target temp in Celsius (66C = 150F) |
+| devices | No | `[]` | Array of pinned saunas (see below) |
+
+**Pinned device fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| host | Yes | - | Sauna's IP address |
+| name | No | `"Sauna"` | Name shown in HomeKit |
+| minTemp | No | Platform default | Override min temp for this sauna |
+| maxTemp | No | Platform default | Override max temp for this sauna |
 
 ## CLI Tool
 

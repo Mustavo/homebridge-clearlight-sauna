@@ -1,6 +1,6 @@
 import type { API } from 'homebridge';
-import { ClearlightSaunaAccessory } from './sauna-accessory';
+import { SaunaPlatform, PLATFORM_NAME, PLUGIN_NAME } from './platform';
 
 export default (api: API) => {
-  api.registerAccessory('homebridge-clearlight-sauna', 'ClearlightSauna', ClearlightSaunaAccessory);
+  api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, SaunaPlatform);
 };

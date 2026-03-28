@@ -56,3 +56,46 @@ export function discoverSauna(timeoutMs = 5000): Promise<DiscoveredDevice | null
     });
   });
 }
+
+/**
+ * Discover all Clearlight saunas on the local network.
+ * Collects all responses within the timeout window.
+ */
+export function discoverAllSaunas(timeoutMs = 5000): Promise<DiscoveredDevice[]> {
+  return new Promise((resolve) => {
+    const devices: DiscoveredDevice[] = [];
+    const seen = new Set<string>();
+    const socket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+
+    const cleanup = () => {
+      try { socket.close(); } catch { /* ignore */ }
+    };
+
+    setTimeout(() => {
+      cleanup();
+      resolve(devices);
+    }, timeoutMs);
+
+    socket.on('message', (msg, rinfo) => {
+      const result = parseFrame(msg);
+      if (result && result.frame.command === Command.DISCOVER_RESPONSE) {
+        const did = result.frame.payload.toString('ascii').replace(/\0/g, '');
+        if (!seen.has(did)) {
+          seen.add(did);
+          devices.push({ ip: rinfo.address, port: rinfo.port, did });
+        }
+      }
+    });
+
+    socket.on('error', () => {
+      cleanup();
+      resolve(devices);
+    });
+
+    socket.bind(0, () => {
+      socket.setBroadcast(true);
+      const frame = buildFrame(Command.DISCOVER_REQUEST);
+      socket.send(frame, 0, frame.length, UDP_BROADCAST_PORT, '255.255.255.255');
+    });
+  });
+}
