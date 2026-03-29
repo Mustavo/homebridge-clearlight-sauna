@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/icon_100.png" alt="Clearlight Sauna icon" width="100">
+</p>
+
 # homebridge-clearlight-sauna
 
 [![npm](https://img.shields.io/npm/v/homebridge-clearlight-sauna)](https://www.npmjs.com/package/homebridge-clearlight-sauna)
