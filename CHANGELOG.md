@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.9] - 2026-04-13
+
+### Fixed
+- Duplicate accessories when using auto-discovery (no `mac`/`did`/`host` in config). The pinned auto-device was registered under a `host-unknown` UUID, while the platform's periodic discovery independently registered the same physical sauna under its DID-based UUID - producing two accessories for one sauna. Fixed by tracking claimed DIDs: pinned handlers register their DID on authentication, and discovery skips any DID already claimed.
+
+---
+
 ## [2.1.8] - 2026-04-13
 
 ### Fixed

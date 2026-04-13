@@ -41,6 +41,8 @@ export { PLUGIN_NAME, PLATFORM_NAME };
 export class SaunaPlatform implements DynamicPlatformPlugin {
   private readonly cachedAccessories: Map<string, PlatformAccessory> = new Map();
   private readonly handlers: Map<string, SaunaAccessoryHandler> = new Map();
+  /** DIDs already managed by a pinned handler - discovery skips these to prevent duplicates. */
+  private readonly claimedDids: Set<string> = new Set();
   private readonly discoveryTimeout: number;
   private readonly discoveryInterval: number;
   private readonly devices: DeviceConfig[];
@@ -114,6 +116,9 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
         this.cachedAccessories.set(uuid, accessory);
       }
 
+      // Claim the DID immediately if known so discovery skips it from the start.
+      if (deviceConfig.did) this.claimedDids.add(deviceConfig.did);
+
       if (!this.handlers.has(uuid)) {
         const handler = new SaunaAccessoryHandler(this.log, accessory, this.api, {
           mac: deviceConfig.mac,
@@ -125,7 +130,11 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
           internalLightName: deviceConfig.internalLightName,
           externalLightName: deviceConfig.externalLightName,
           atTempSensor: deviceConfig.atTempSensor,
-          onAuthenticated: (info) => this.writeDeviceState(info),
+          onAuthenticated: (info) => {
+            // Claim the DID as soon as the handler authenticates (handles the auto-discover case).
+            if (info.did) this.claimedDids.add(info.did);
+            this.writeDeviceState(info);
+          },
         });
         this.handlers.set(uuid, handler);
       }
@@ -151,6 +160,15 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
     for (const device of discovered) {
       if (!device.did) {
         this.log.warn('Ignoring discovery response with empty device ID (malformed payload)');
+        continue;
+      }
+
+      // Skip devices already managed by a pinned handler (auto or explicit DID/mac).
+      // Without this check, a pinned auto-device (UUID keyed on 'host-unknown') and a
+      // discovery-registered device (UUID keyed on DID) would both be created for the
+      // same physical sauna, producing duplicate accessories.
+      if (this.claimedDids.has(device.did)) {
+        this.log.debug('Skipping discovered device %s - already managed by a pinned handler', device.did);
         continue;
       }
 
