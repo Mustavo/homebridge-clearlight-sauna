@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.5] - 2026-04-13
+
+### Fixed
+- Discovery DID parsing: payload starts with a null status byte, causing split-on-null to return empty string. Now strips leading null bytes before reading the DID field.
+
+---
+
 ## [2.1.4] - 2026-04-13
 
 ### Fixed
