@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.8] - 2026-04-13
+
+### Fixed
+- Custom UI now auto-creates the platform config entry on first install. Previously, installing the plugin without manually adding the platform block to config.json meant Homebridge never initialised the platform and no discovery ran. The UI now saves a default entry automatically and prompts for a Homebridge restart.
+
+---
+
 ## [2.1.7] - 2026-04-13
 
 ### Fixed

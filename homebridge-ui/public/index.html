@@ -570,10 +570,21 @@
           homebridge.getPluginConfig(),
         ]);
 
-        pluginConfigs   = configs;
-        platformConfig  = configs.find(c => c.platform === 'ClearlightSauna') ?? { platform: 'ClearlightSauna', name: 'Clearlight Sauna' };
-        const configDevices = Array.isArray(platformConfig.devices) ? platformConfig.devices : [];
+        pluginConfigs  = configs;
+        const existing = configs.find(c => c.platform === 'ClearlightSauna');
 
+        // First install: no platform entry yet — create one and save immediately.
+        if (!existing) {
+          platformConfig = { platform: 'ClearlightSauna', name: 'Clearlight Sauna' };
+          pluginConfigs  = [...configs, platformConfig];
+          await homebridge.updatePluginConfig(pluginConfigs);
+          await homebridge.savePluginConfig();
+          homebridge.toast.success('Clearlight Sauna platform added. Restart Homebridge to begin discovery.');
+        } else {
+          platformConfig = existing;
+        }
+
+        const configDevices = Array.isArray(platformConfig.devices) ? platformConfig.devices : [];
         devices = buildDeviceList(discovered, configDevices);
         renderAll();
       } catch (err) {
