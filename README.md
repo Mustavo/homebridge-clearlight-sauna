@@ -8,42 +8,46 @@
 [![npm downloads](https://img.shields.io/npm/dt/homebridge-clearlight-sauna)](https://www.npmjs.com/package/homebridge-clearlight-sauna)
 [![Homebridge](https://img.shields.io/badge/homebridge-%3E%3D1.6.0-blueviolet)](https://homebridge.io)
 
-Homebridge plugin to control a Clearlight/Jacuzzi infrared sauna via Apple HomeKit and Siri.
+Homebridge plugin for Clearlight and Jacuzzi infrared saunas. Control your sauna with Siri, the Apple Home app, or any HomeKit automation — power, temperature, lights, and a ready notification when your sauna hits target temp.
 
-Communicates directly with the sauna over your local network using the Gizwits GAgent binary protocol. No cloud, no internet required.
+Communicates directly with the sauna over your local network. No cloud, no subscription, no internet connection required.
 
 <p align="center">
-  <img src="images/SaunaControls.png" alt="Sauna in Apple Home app" width="300">
+  <img src="images/SaunaControls.png" alt="Sauna controls in Apple Home app" width="300">
 </p>
 
 ## Features
 
 - Power on/off and target temperature via Siri or the Home app
-- Internal and external light control
-- Auto-discovers your sauna on the local network (UDP broadcast)
-- Configurable via the Homebridge UI (Settings tab)
-- Standalone CLI for direct sauna control and diagnostics
-- Zero dependencies beyond Homebridge
+- Internal and external cabin light control
+- Auto-discovers your sauna on the local network — no IP address config needed
+- Stable MAC address-based device identity: survives DHCP lease rotation
+- Optional "At Temperature" sensor: get a native HomeKit push notification when your sauna is ready
+- Live device status panel in Homebridge Config UI (last seen, IP, MAC)
+- Per-sauna settings: name, temperature range, light names
+- Reliable control with ACK verification — Home app shows "No Response" if the sauna is unreachable rather than silently failing
+- Local LAN only. Zero cloud dependency.
 
 ## What You Get in HomeKit
 
 | Control | HomeKit Service | Siri Example |
 |---------|----------------|--------------|
 | Power + temperature | HeaterCooler | "Hey Siri, turn on the sauna" / "Set the sauna to 60 degrees" |
-| Internal light | Switch | "Turn on the internal light" |
+| Internal cabin light | Switch | "Turn on the sauna light" |
 | External light | Switch | "Turn on the external light" |
+| Ready notification | Occupancy Sensor (optional) | Triggers when sauna reaches target — enable notifications in Home app |
 
-LED/chromotherapy is read-only (controlled from the sauna's physical panel).
+LED/chromotherapy brightness is read-only in the protocol (set from the sauna's physical panel).
 
 ## Compatibility
 
-Tested with the Clearlight Sanctuary range. Should work with any Clearlight or Jacuzzi infrared sauna that has the WiFi module (Gizwits GAgent firmware on port 12416). If you've confirmed it working on another model, open an issue and let us know.
+Tested with the Clearlight Sanctuary range. Should work with any Clearlight or Jacuzzi infrared sauna fitted with the WiFi module (Gizwits GAgent firmware). If you've confirmed it working on another model, open an issue and I'll add it to the list.
 
 ## Install
 
 ### Via Homebridge UI (recommended)
 
-Search for `clearlight` in the Homebridge UI plugin tab and install.
+Search for `clearlight` in the Homebridge plugins tab and install.
 
 ### Via command line
 
@@ -53,75 +57,96 @@ npm install -g homebridge-clearlight-sauna
 
 ## Configuration
 
-Saunas are auto-discovered on your local network. No configuration is required for most users -- just install the plugin and your sauna will appear in HomeKit.
+Saunas are auto-discovered on your local network — just install the plugin and your sauna will appear in HomeKit. No configuration required for most users.
 
-For advanced setups, configure via the Homebridge UI Settings tab, or add to your `config.json` platforms array:
+### Find your sauna's MAC address
 
-```json
-{
-  "platform": "ClearlightSauna",
-  "name": "Clearlight Sauna"
-}
+Run the discover command from the Homebridge plugin directory, or use your router's device list:
+
+```bash
+npm run sauna -- discover
 ```
 
-To pin a sauna by IP (useful for multiple saunas or networks without broadcast):
+Output includes the MAC address, IP, and a ready-to-paste config snippet.
+
+### Pin a sauna by MAC address (recommended)
+
+Pinning by MAC address ensures the plugin always finds your sauna even if its IP address changes (DHCP lease rotation).
 
 ```json
 {
   "platform": "ClearlightSauna",
   "name": "Clearlight Sauna",
   "devices": [
-    { "host": "192.168.1.100", "name": "Gym Sauna" },
-    { "host": "192.168.1.101", "name": "Pool Sauna" }
+    {
+      "mac": "aa:bb:cc:dd:ee:ff",
+      "name": "Sauna",
+      "minTemp": 40,
+      "maxTemp": 70,
+      "atTempSensor": true
+    }
   ]
 }
 ```
 
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| platform | Yes | - | Must be `"ClearlightSauna"` |
-| name | Yes | `"Clearlight Sauna"` | Platform name |
-| discoveryTimeout | No | `5` | Seconds to listen for saunas per scan |
-| discoveryInterval | No | `60` | Seconds between discovery scans |
-| minTemp | No | `16` | Default min target temp in Celsius |
-| maxTemp | No | `66` | Default max target temp in Celsius (66C = 150F) |
-| devices | No | `[]` | Array of pinned saunas (see below) |
+### Platform options
 
-**Pinned device fields:**
+| Field | Default | Description |
+|-------|---------|-------------|
+| `name` | `"Clearlight Sauna"` | Platform name |
+| `discoveryTimeout` | `5` | Seconds to listen for saunas per scan |
+| `discoveryInterval` | `60` | Seconds between network scans |
+| `minTemp` | `16` | Default minimum target temperature (°C) |
+| `maxTemp` | `66` | Default maximum target temperature (°C) |
+| `devices` | `[]` | Pinned sauna list (see below) |
 
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| host | Yes | - | Sauna's IP address |
-| name | No | `"Sauna"` | Name shown in HomeKit |
-| minTemp | No | Platform default | Override min temp for this sauna |
-| maxTemp | No | Platform default | Override max temp for this sauna |
+### Per-sauna options
+
+| Field | Description |
+|-------|-------------|
+| `mac` | Hardware MAC address — preferred. Stable across IP changes. |
+| `did` | Gizwits device ID — alternative to MAC if MAC is unavailable. |
+| `name` | Display name in HomeKit |
+| `minTemp` | Minimum temperature slider value (°C) |
+| `maxTemp` | Maximum temperature slider value (°C) |
+| `defaultTemp` | Temperature shown before the sauna reports its set point |
+| `internalLightName` | Name for the internal light switch in HomeKit |
+| `externalLightName` | Name for the external light switch in HomeKit |
+| `atTempSensor` | `true` to add an occupancy sensor that triggers at target temperature |
+
+> `host` (static IP) is deprecated. Use `mac` instead — it will break when the DHCP lease rotates.
+
+### At Temperature notification
+
+Enable `atTempSensor: true` on a device, then open the Home app, find the "At Temperature" sensor, and enable notifications. You'll get a native push notification on your iPhone/Apple Watch when the sauna is ready.
 
 ## CLI Tool
 
-A standalone CLI is included for direct sauna control and diagnostics:
+A diagnostic CLI is included for testing and direct control. Run from the plugin source directory:
 
 ```bash
-npx homebridge-clearlight-sauna discover        # find sauna on network
-npx homebridge-clearlight-sauna status           # full state dump
-npx homebridge-clearlight-sauna power on         # turn on
-npx homebridge-clearlight-sauna power off        # turn off
-npx homebridge-clearlight-sauna temp 55          # set target to 55C
-npx homebridge-clearlight-sauna light int on     # internal light on
-npx homebridge-clearlight-sauna light ext off    # external light off
-npx homebridge-clearlight-sauna heater 200 200   # left/right heater intensity
-npx homebridge-clearlight-sauna timer 45         # 45 min session
-npx homebridge-clearlight-sauna monitor          # live state stream
+npm run sauna -- discover          # find saunas on the network (shows MAC + IP)
+npm run sauna -- status            # full state dump
+npm run sauna -- power on          # turn on
+npm run sauna -- power off         # turn off
+npm run sauna -- temp 55           # set target to 55°C
+npm run sauna -- light int on      # internal light on
+npm run sauna -- light ext off     # external light off
+npm run sauna -- heater 200 200    # left/right heater intensity
+npm run sauna -- timer 45          # 45 minute session
+npm run sauna -- monitor           # live state stream
 ```
 
 ## Protocol
 
-Local LAN only. The sauna's WiFi module runs the Gizwits GAgent firmware:
-- TCP binary on port 12416 (all control/state)
-- UDP broadcast on port 12414 (discovery)
-- Auth: passcode request/login, then heartbeat every 4s
-- Controls processed async: ACK (0x94) arrives ~2-4s after command
+The sauna's WiFi module runs Gizwits GAgent firmware and communicates over the local network only:
 
-Full protocol details in [src/gizwits/protocol.ts](src/gizwits/protocol.ts).
+- UDP broadcast on port 12414 (discovery)
+- TCP binary on port 12416 (auth, control, state)
+- Auth: passcode negotiation per device, then heartbeat every 4s
+- Controls are async: ACK (0x94) arrives ~2-4s after command, state update follows
+
+Full protocol notes in [src/gizwits/protocol.ts](src/gizwits/protocol.ts).
 
 ## Development
 
