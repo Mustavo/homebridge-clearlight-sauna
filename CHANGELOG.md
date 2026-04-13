@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.1] - 2026-04-13
+
+### Changed
+- README updated for v2.1.0 features (MAC-based config, at-temp sensor, custom UI status panel).
+
+---
+
 ## [2.1.0] - 2026-04-13
 
 ### Added
