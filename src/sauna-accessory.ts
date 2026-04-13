@@ -59,7 +59,9 @@ export class SaunaAccessoryHandler {
 
   // Stable hardware identifiers - at least one should be set for reliable reconnection
   private readonly mac: string | null;
-  private readonly did: string | null;
+  // Not readonly: zero-config path captures the discovered DID on first connect so
+  // the platform can add it to claimedDids and avoid duplicate accessory registration.
+  private did: string | null;
 
   // Cached IP from last successful connect - used as a hint only, never trusted across reconnects
   private cachedIp: string | null;
@@ -282,6 +284,10 @@ export class SaunaAccessoryHandler {
     const result = await discoverSauna(8000);
     if (result) {
       this.log.info('Found sauna at %s (DID: %s)', result.ip, result.did);
+      // Capture the DID so onAuthenticated can pass it to the platform's claimedDids set.
+      // Without this, the platform's runDiscovery() sees the same device as unclaimed and
+      // registers a duplicate accessory.
+      if (!this.did && result.did) this.did = result.did;
       return result.ip;
     }
     return null;

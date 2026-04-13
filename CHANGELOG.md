@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.10] - 2026-04-13
+
+### Fixed
+- Duplicate accessories on zero-config (auto-discover) installs. The v2.1.9 fix added a `claimedDids` set to prevent the platform's periodic discovery from re-registering a device already managed by a pinned handler. However, the `did` field on `SaunaAccessoryHandler` was never populated in the zero-config path - `resolveHost()` discarded the DID from the discovery result, so `onAuthenticated` fired with `did: null` and the claim was never recorded. Fixed by capturing the discovered DID into `this.did` during the zero-config resolve step.
+
+---
+
 ## [2.1.9] - 2026-04-13
 
 ### Fixed
