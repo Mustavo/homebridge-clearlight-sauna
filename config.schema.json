@@ -2,15 +2,15 @@
   "pluginAlias": "ClearlightSauna",
   "pluginType": "platform",
   "singular": true,
-  "headerDisplay": "Control your Clearlight/Jacuzzi infrared saunas via local LAN. Saunas are auto-discovered on your network.",
+  "headerDisplay": "Clearlight/Jacuzzi infrared sauna controller. Saunas are auto-discovered on your local network. Run 'npm run sauna -- discover' to find your sauna's MAC address.",
   "schema": {
     "type": "object",
+    "required": ["name"],
     "properties": {
       "name": {
         "title": "Platform Name",
         "type": "string",
-        "default": "Clearlight Sauna",
-        "required": true
+        "default": "Clearlight Sauna"
       },
       "discoveryTimeout": {
         "title": "Discovery Timeout (seconds)",
@@ -18,7 +18,7 @@
         "default": 5,
         "minimum": 2,
         "maximum": 30,
-        "description": "How long to listen for sauna responses during each discovery scan."
+        "description": "How long to listen for sauna responses during each network scan."
       },
       "discoveryInterval": {
         "title": "Discovery Interval (seconds)",
@@ -26,55 +26,89 @@
         "default": 60,
         "minimum": 10,
         "maximum": 600,
-        "description": "How often to scan for new saunas on the network."
+        "description": "How often to scan the network for saunas."
       },
       "minTemp": {
-        "title": "Default Minimum Temperature (Celsius)",
+        "title": "Default Minimum Temperature (°C)",
         "type": "number",
         "default": 16,
         "minimum": 10,
-        "maximum": 40,
-        "description": "Default minimum target temperature for discovered saunas."
+        "maximum": 40
       },
       "maxTemp": {
-        "title": "Default Maximum Temperature (Celsius)",
+        "title": "Default Maximum Temperature (°C)",
         "type": "number",
         "default": 66,
         "minimum": 40,
-        "maximum": 82,
-        "description": "Default maximum target temperature for discovered saunas (66C = 150F)."
+        "maximum": 82
       },
       "devices": {
-        "title": "Pinned Saunas",
+        "title": "Configured Saunas",
         "type": "array",
-        "description": "Manually configure saunas by IP address. Leave empty to use auto-discovery only.",
+        "description": "Optionally pin a sauna by MAC address and customise its HomeKit name and settings. Leave empty to auto-discover all saunas on the network.",
         "items": {
           "type": "object",
           "properties": {
-            "host": {
-              "title": "IP Address",
-              "type": "string",
-              "required": true,
-              "description": "Static IP address of the sauna."
-            },
             "name": {
-              "title": "Name",
+              "title": "Sauna Name",
               "type": "string",
-              "description": "Display name in HomeKit."
+              "placeholder": "Sauna",
+              "description": "Display name shown in the Home app for this sauna."
+            },
+            "mac": {
+              "title": "MAC Address (recommended)",
+              "type": "string",
+              "placeholder": "aa:bb:cc:dd:ee:ff",
+              "description": "Hardware MAC address of the sauna's WiFi module. Run 'npm run sauna -- discover' to find it, or check your router's device list. Ensures the plugin always finds the sauna even if its IP address changes."
+            },
+            "did": {
+              "title": "Device ID (alternative to MAC)",
+              "type": "string",
+              "description": "Gizwits device ID shown in the discover command output. Use this if MAC address is not available."
+            },
+            "host": {
+              "title": "IP Address (deprecated)",
+              "type": "string",
+              "description": "Static IP address. Deprecated - use MAC address instead. Will break if the DHCP lease changes."
+            },
+            "defaultTemp": {
+              "title": "Default Temperature (°C)",
+              "type": "number",
+              "minimum": 16,
+              "maximum": 82,
+              "description": "Temperature shown in the Home app before the sauna reports its own set point."
             },
             "minTemp": {
-              "title": "Minimum Temperature (Celsius)",
+              "title": "Minimum Temperature (°C)",
               "type": "number",
               "minimum": 10,
               "maximum": 40,
-              "description": "Override default minimum temperature for this sauna."
+              "description": "Lowest temperature the slider will go in the Home app."
             },
             "maxTemp": {
-              "title": "Maximum Temperature (Celsius)",
+              "title": "Maximum Temperature (°C)",
               "type": "number",
               "minimum": 40,
               "maximum": 82,
-              "description": "Override default maximum temperature for this sauna."
+              "description": "Highest temperature the slider will go in the Home app."
+            },
+            "internalLightName": {
+              "title": "Internal Light Name",
+              "type": "string",
+              "placeholder": "Internal Light",
+              "description": "Name shown in the Home app for the internal cabin light switch."
+            },
+            "externalLightName": {
+              "title": "External Light Name",
+              "type": "string",
+              "placeholder": "External Light",
+              "description": "Name shown in the Home app for the external light switch."
+            },
+            "atTempSensor": {
+              "title": "At Temperature Sensor",
+              "type": "boolean",
+              "default": false,
+              "description": "Add an occupancy sensor that triggers when the sauna reaches its target temperature. Enable notifications for this sensor in the Home app to get a native push notification when your sauna is ready."
             }
           }
         }

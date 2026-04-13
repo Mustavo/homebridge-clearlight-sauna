@@ -17,7 +17,7 @@
  */
 
 import { ClearlightDevice } from './gizwits/device';
-import { discoverSauna } from './gizwits/discovery';
+import { discoverWithMac } from './gizwits/discovery';
 import type { SaunaState } from './gizwits/protocol';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -171,17 +171,33 @@ function waitForControlResult(device: ClearlightDevice, timeoutMs = 8000): Promi
 // --- Commands ---
 
 async function cmdDiscover(): Promise<void> {
-  console.log('Broadcasting UDP discovery...');
-  const result = await discoverSauna(8000);
-  if (!result) {
+  console.log('Broadcasting UDP discovery (8s)...\n');
+  const results = await discoverWithMac(8000);
+
+  if (results.length === 0) {
     console.log('No sauna found on the network.');
     console.log('Make sure the sauna is powered on and connected to WiFi.');
-    console.log('If it is new, hold the power button for 7 seconds to enter pairing mode.');
     process.exit(1);
   }
-  console.log(`Found sauna at ${result.ip} (device ID: ${result.did})`);
-  saveHost(result.ip);
-  console.log(`Saved to .env: SAUNA_HOST=${result.ip}`);
+
+  for (const r of results) {
+    console.log(`Sauna found:`);
+    console.log(`  IP address : ${r.ip}`);
+    console.log(`  MAC address: ${r.mac ?? '(not in ARP cache - try again after connecting)'}`);
+    console.log(`  Device ID  : ${r.did}`);
+    console.log('');
+    console.log('Add to your Homebridge config.json (recommended - survives IP changes):');
+    if (r.mac) {
+      console.log(`  { "name": "Sauna", "mac": "${r.mac}" }`);
+    } else {
+      console.log(`  { "name": "Sauna", "did": "${r.did}" }`);
+    }
+    console.log('');
+  }
+
+  // Save first result's IP for CLI use
+  saveHost(results[0].ip);
+  console.log(`Saved to .env: SAUNA_HOST=${results[0].ip}`);
 }
 
 async function cmdStatus(host: string): Promise<void> {
@@ -201,9 +217,8 @@ async function cmdPower(host: string, onOff: string): Promise<void> {
   const device = await connectDevice(host);
   await waitForState(device);
   console.log(`Setting power ${onOff}...`);
-  device.setPower(onOff === 'on');
-  const s = await waitForControlResult(device);
-  console.log(`Power is now ${s.power ? 'ON' : 'OFF'}`);
+  await device.setPower(onOff === 'on');
+  console.log(`Power confirmed: ${device.state?.power ? 'ON' : 'OFF'}`);
   device.destroy();
 }
 
@@ -217,8 +232,8 @@ async function cmdTemp(host: string, tempStr: string): Promise<void> {
   const device = await connectDevice(host);
   await waitForState(device);
   console.log(`Setting target temperature to ${celsius}C (${fahrenheit}F)...`);
-  device.setTargetTemperature(fahrenheit);
-  const s = await waitForControlResult(device);
+  await device.setTargetTemperature(fahrenheit);
+  const s = device.state!;
   console.log(`Target temp confirmed: ${fToC(s.setTemp)}C / ${s.setTemp}F`);
   device.destroy();
 }
@@ -233,9 +248,9 @@ async function cmdLed(host: string, pctStr: string): Promise<void> {
   const device = await connectDevice(host);
   await waitForState(device);
   console.log(`Setting LED to ${pct}% (${raw}/255)...`);
-  device.setLed(raw);
-  const s = await waitForControlResult(device);
-  console.log(`LED confirmed: ${s.led}/255 (${Math.round((s.led / 255) * 100)}%)`);
+  await device.setLed(raw);
+  const s = device.state!;
+  console.log(`LED result: ${s.led}/255 (${Math.round((s.led / 255) * 100)}%) -- note: LED may be read-only from protocol`);
   device.destroy();
 }
 
@@ -249,11 +264,11 @@ async function cmdLight(host: string, which: string, onOff: string): Promise<voi
   const target = onOff === 'on';
   const label = which === 'int' ? 'internal' : 'external';
   console.log(`Setting ${label} light ${onOff}...`);
-  if (which === 'int') device.setInternalLight(target);
-  else device.setExternalLight(target);
-  const s = await waitForControlResult(device);
+  if (which === 'int') await device.setInternalLight(target);
+  else await device.setExternalLight(target);
+  const s = device.state!;
   const actual = which === 'int' ? s.internalLight : s.externalLight;
-  console.log(`${label} light is now ${actual ? 'ON' : 'OFF'}`);
+  console.log(`${label} light confirmed: ${actual ? 'ON' : 'OFF'}`);
   device.destroy();
 }
 
@@ -267,8 +282,8 @@ async function cmdHeater(host: string, leftStr: string, rightStr: string): Promi
   const device = await connectDevice(host);
   await waitForState(device);
   console.log(`Setting heater intensity: left=${left}, right=${right}...`);
-  device.setHeaterIntensity(left, right);
-  const s = await waitForControlResult(device);
+  await device.setHeaterIntensity(left, right);
+  const s = device.state!;
   console.log(`Heaters confirmed: left=${s.left}/255, right=${s.right}/255`);
   device.destroy();
 }
@@ -282,9 +297,8 @@ async function cmdTimer(host: string, minStr: string): Promise<void> {
   const device = await connectDevice(host);
   await waitForState(device);
   console.log(`Setting timer to ${minutes} minutes...`);
-  device.setTimer(minutes);
-  const s = await waitForControlResult(device);
-  console.log(`Timer confirmed: ${s.setMinute} min`);
+  await device.setTimer(minutes);
+  console.log(`Timer set to ${minutes} min`);
   device.destroy();
 }
 

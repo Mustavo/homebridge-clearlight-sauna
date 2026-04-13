@@ -3,6 +3,9 @@
  * Discovers saunas on the LAN and registers each as a cached accessory.
  */
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import type {
   API,
   DynamicPlatformPlugin,
@@ -18,10 +21,19 @@ const PLUGIN_NAME = 'homebridge-clearlight-sauna';
 const PLATFORM_NAME = 'ClearlightSauna';
 
 interface DeviceConfig {
-  host: string;
+  /** Preferred: hardware MAC address (aa:bb:cc:dd:ee:ff). Survives DHCP lease changes. */
+  mac?: string;
+  /** Alternative: Gizwits device ID from discover command output. Also stable across IP changes. */
+  did?: string;
+  /** Deprecated: static IP address. Use mac or did instead. */
+  host?: string;
   name?: string;
-  maxTemp?: number;
   minTemp?: number;
+  maxTemp?: number;
+  defaultTemp?: number;
+  internalLightName?: string;
+  externalLightName?: string;
+  atTempSensor?: boolean;
 }
 
 export { PLUGIN_NAME, PLATFORM_NAME };
@@ -33,6 +45,7 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
   private readonly discoveryInterval: number;
   private readonly devices: DeviceConfig[];
   private discoveryTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly statePath: string;
 
   constructor(
     private readonly log: Logging,
@@ -42,6 +55,8 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
     this.discoveryTimeout = (config.discoveryTimeout ?? 5) * 1000;
     this.discoveryInterval = (config.discoveryInterval ?? 60) * 1000;
     this.devices = (config.devices as DeviceConfig[]) ?? [];
+    const storagePath = process.env['UIX_STORAGE_PATH'] ?? path.join(os.homedir(), '.homebridge');
+    this.statePath = path.join(storagePath, 'clearlightsauna-state.json');
 
     this.api.on('didFinishLaunching', () => {
       this.log.info('Clearlight Sauna platform starting');
@@ -61,6 +76,18 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
     });
   }
 
+  private writeDeviceState(info: { mac: string | null; did: string | null; ip: string; name: string }): void {
+    const key = info.mac ?? info.did ?? info.ip;
+    try {
+      let state: Record<string, unknown> = {};
+      try { state = JSON.parse(fs.readFileSync(this.statePath, 'utf8')); } catch { /* first run */ }
+      state[key] = { name: info.name, ip: info.ip, mac: info.mac, did: info.did, lastSeen: new Date().toISOString() };
+      fs.writeFileSync(this.statePath, JSON.stringify(state, null, 2));
+    } catch (err) {
+      this.log.debug('Could not write device state: %s', (err as Error).message);
+    }
+  }
+
   configureAccessory(accessory: PlatformAccessory): void {
     this.log.info('Restoring cached accessory: %s', accessory.displayName);
     this.cachedAccessories.set(accessory.UUID, accessory);
@@ -68,24 +95,37 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
 
   private setupPinnedDevices(): void {
     for (const deviceConfig of this.devices) {
-      const uuid = this.api.hap.uuid.generate('clearlight-' + deviceConfig.host);
+      // UUID is keyed on the most stable identifier available
+      const stableKey = deviceConfig.mac
+        ? 'mac-' + deviceConfig.mac.toLowerCase().replace(/-/g, ':')
+        : deviceConfig.did
+          ? 'did-' + deviceConfig.did
+          : 'host-' + (deviceConfig.host ?? 'unknown');
+
+      const uuid = this.api.hap.uuid.generate('clearlight-' + stableKey);
       const name = deviceConfig.name ?? 'Sauna';
+      const identLabel = deviceConfig.mac ?? deviceConfig.did ?? deviceConfig.host ?? 'auto';
 
       let accessory = this.cachedAccessories.get(uuid);
       if (!accessory) {
-        this.log.info('Adding pinned sauna: %s (%s)', name, deviceConfig.host);
+        this.log.info('Adding configured sauna: %s (%s)', name, identLabel);
         accessory = new this.api.platformAccessory(name, uuid);
-        accessory.context.host = deviceConfig.host;
-        accessory.context.pinned = true;
         this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
         this.cachedAccessories.set(uuid, accessory);
       }
 
       if (!this.handlers.has(uuid)) {
         const handler = new SaunaAccessoryHandler(this.log, accessory, this.api, {
+          mac: deviceConfig.mac,
+          did: deviceConfig.did,
           host: deviceConfig.host,
           minTemp: deviceConfig.minTemp,
           maxTemp: deviceConfig.maxTemp,
+          defaultTemp: deviceConfig.defaultTemp,
+          internalLightName: deviceConfig.internalLightName,
+          externalLightName: deviceConfig.externalLightName,
+          atTempSensor: deviceConfig.atTempSensor,
+          onAuthenticated: (info) => this.writeDeviceState(info),
         });
         this.handlers.set(uuid, handler);
       }
@@ -128,9 +168,10 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
       }
 
       const handler = new SaunaAccessoryHandler(this.log, accessory, this.api, {
-        host: device.ip,
+        did: device.did,
         minTemp: this.config.minTemp as number | undefined,
         maxTemp: this.config.maxTemp as number | undefined,
+        onAuthenticated: (info) => this.writeDeviceState(info),
       });
       this.handlers.set(uuid, handler);
     }

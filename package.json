@@ -1,12 +1,13 @@
 {
   "name": "homebridge-clearlight-sauna",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Homebridge plugin for Clearlight/Jacuzzi infrared saunas via local LAN Gizwits protocol. Auto-discovers sauna on your network. No cloud required.",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "sauna": "npx ts-node src/cli.ts",
+    "mock": "npx ts-node scripts/mock-sauna.ts",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -34,7 +35,9 @@
     "homebridge": ">=1.6.0",
     "node": ">=18.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@homebridge/plugin-ui-utils": "^2.2.3"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "homebridge": "^1.8.0",

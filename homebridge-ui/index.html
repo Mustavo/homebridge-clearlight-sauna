@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      margin: 0;
+      padding: 0;
+      color: var(--text-color, #333);
+    }
+
+    #status-panel {
+      margin-bottom: 24px;
+    }
+
+    h3 {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.6;
+      margin: 0 0 10px 0;
+    }
+
+    .device-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border-color, #e0e0e0);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: var(--card-bg, #fafafa);
+    }
+
+    .device-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .device-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .device-name {
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .device-meta {
+      font-size: 12px;
+      opacity: 0.6;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .device-lastseen {
+      flex-shrink: 0;
+      text-align: right;
+      font-size: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .badge-recent  { background: #d4edda; color: #155724; }
+    .badge-stale   { background: #fff3cd; color: #856404; }
+    .badge-old     { background: #f8d7da; color: #721c24; }
+    .badge-unknown { background: #e2e3e5; color: #383d41; }
+
+    .empty-state {
+      padding: 16px;
+      text-align: center;
+      opacity: 0.5;
+      font-size: 13px;
+      border: 1px dashed var(--border-color, #ccc);
+      border-radius: 8px;
+    }
+
+    .loading {
+      opacity: 0.5;
+      font-size: 13px;
+      padding: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="status-panel">
+    <h3>Sauna Status</h3>
+    <div id="status-content" class="loading">Loading device status...</div>
+  </div>
+
+  <script>
+    function relativeTime(isoString) {
+      const now = Date.now();
+      const then = new Date(isoString).getTime();
+      const diffMs = now - then;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHrs  = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1)   return 'Just now';
+      if (diffMins < 60)  return `${diffMins}m ago`;
+      if (diffHrs  < 24)  return `${diffHrs}h ago`;
+      if (diffDays < 7)   return `${diffDays}d ago`;
+      return new Date(isoString).toLocaleDateString();
+    }
+
+    function badgeFor(isoString) {
+      if (!isoString) return { cls: 'badge-unknown', label: 'Never seen' };
+      const diffHrs = (Date.now() - new Date(isoString).getTime()) / 3600000;
+      if (diffHrs < 1)  return { cls: 'badge-recent', label: 'Online recently' };
+      if (diffHrs < 24) return { cls: 'badge-stale',  label: 'Today' };
+      if (diffHrs < 168) return { cls: 'badge-stale', label: 'This week' };
+      return { cls: 'badge-old', label: 'Not seen in a while' };
+    }
+
+    function renderStatus(state) {
+      const container = document.getElementById('status-content');
+      const keys = Object.keys(state);
+
+      if (keys.length === 0) {
+        container.innerHTML = '<div class="empty-state">No saunas have connected yet. Check that your sauna is on and connected to WiFi.</div>';
+        return;
+      }
+
+      container.innerHTML = keys.map(key => {
+        const d = state[key];
+        const badge = badgeFor(d.lastSeen);
+        const metaParts = [];
+        if (d.mac) metaParts.push(`MAC: ${d.mac}`);
+        if (d.ip)  metaParts.push(`IP: ${d.ip}`);
+
+        return `
+          <div class="device-card">
+            <div class="device-icon">🧖</div>
+            <div class="device-info">
+              <div class="device-name">${escapeHtml(d.name || 'Sauna')}</div>
+              <div class="device-meta">${metaParts.map(escapeHtml).join(' &middot; ')}</div>
+            </div>
+            <div class="device-lastseen">
+              <span class="badge ${badge.cls}">${badge.label}</span>
+              <div>${d.lastSeen ? relativeTime(d.lastSeen) : '—'}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    (async () => {
+      try {
+        const status = await homebridge.request('/device-status');
+        renderStatus(status);
+      } catch (err) {
+        document.getElementById('status-content').innerHTML =
+          '<div class="empty-state">Could not load device status.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

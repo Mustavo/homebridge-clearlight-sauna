@@ -1,6 +1,12 @@
 /**
  * TCP device connection and control for Clearlight sauna.
  * Handles authentication, heartbeat, state polling, and attribute control.
+ *
+ * Control flow:
+ *   1. sendControl() - sends command, returns Promise resolving on 0x94 ACK (5s timeout)
+ *   2. awaitStateCondition() - listens for next state event matching predicate (7s timeout)
+ *   3. Public methods (setPower etc.) combine both + retry once on mismatch
+ *   4. Callers receive a rejected Promise if the sauna doesn't confirm the change
  */
 
 import * as net from 'net';
@@ -158,7 +164,7 @@ export class ClearlightDevice extends EventEmitter {
         break;
 
       case Command.CONTROL_RESPONSE:
-        this.log('Control ACK');
+        this.log('Control ACK received');
         this.emit('controlAck');
         break;
 
@@ -178,7 +184,7 @@ export class ClearlightDevice extends EventEmitter {
     }
   }
 
-  // --- Protocol commands ---
+  // --- Internal protocol ---
 
   private send(frame: Buffer): void {
     if (this.socket && this.connected) {
@@ -200,60 +206,174 @@ export class ClearlightDevice extends EventEmitter {
     this.send(buildFrame(Command.STATE_REQUEST, payload));
   }
 
-  private sendControlPayload(payload: Buffer): void {
-    if (!this.authenticated) return;
-    this.sequenceNumber++;
-    const frame = buildControlFrame(this.sequenceNumber, payload);
-    this.send(frame);
-    // Request state update after a short delay to confirm
-    setTimeout(() => this.requestState(), 500);
+  /**
+   * Send a control payload and return a Promise that resolves when the sauna ACKs (0x94).
+   * Rejects if not authenticated, if ACK times out, or if the device disconnects.
+   * After ACK, schedules a state refresh delayed to allow the sauna to process the command
+   * (~2.5s; per CHANGELOG ACK arrives at 2-4s, state follows shortly after).
+   */
+  private sendControl(payload: Buffer, ackTimeoutMs = 5000): Promise<void> {
+    if (!this.authenticated || !this.socket || this.destroyed) {
+      return Promise.reject(new Error('Device not connected'));
+    }
+
+    return new Promise((resolve, reject) => {
+      const cleanup = () => {
+        this.off('controlAck', onAck);
+        this.off('disconnected', onDisconnect);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        reject(new Error('Control ACK timeout after ' + ackTimeoutMs + 'ms'));
+      }, ackTimeoutMs);
+
+      const onAck = () => {
+        clearTimeout(timer);
+        cleanup();
+        // Give the sauna time to action the command before polling state
+        setTimeout(() => { if (!this.destroyed) this.requestState(); }, 2500);
+        resolve();
+      };
+
+      const onDisconnect = () => {
+        clearTimeout(timer);
+        cleanup();
+        reject(new Error('Device disconnected while waiting for ACK'));
+      };
+
+      this.once('controlAck', onAck);
+      this.once('disconnected', onDisconnect);
+      this.sequenceNumber++;
+      this.send(buildControlFrame(this.sequenceNumber, payload));
+    });
   }
 
-  // --- Public control methods ---
+  /**
+   * Wait for a state event where predicate returns true.
+   * Checks current state first (handles the case where state arrived before listener setup).
+   * Resolves false if the device disconnects or timeout expires.
+   */
+  private awaitStateCondition(predicate: (s: SaunaState) => boolean, timeoutMs: number): Promise<boolean> {
+    if (this._state && predicate(this._state)) return Promise.resolve(true);
 
-  setPower(on: boolean): void {
-    this.sendControlPayload(buildFlagControl(FLAG_POWER, on));
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        this.off('state', onState);
+        this.off('disconnected', onDisconnect);
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve(false);
+      }, timeoutMs);
+
+      const onState = (state: SaunaState) => {
+        if (predicate(state)) {
+          clearTimeout(timer);
+          cleanup();
+          resolve(true);
+        }
+      };
+
+      const onDisconnect = () => {
+        clearTimeout(timer);
+        cleanup();
+        resolve(false);
+      };
+
+      this.on('state', onState);
+      this.once('disconnected', onDisconnect);
+    });
   }
 
-  setTargetTemperature(tempF: number): void {
-    this.sendControlPayload(buildTempControl(tempF));
+  /**
+   * Send a control command and verify the sauna state reflects the change.
+   * Retries once if the first attempt is not confirmed within the state timeout.
+   * Throws if still unconfirmed after retry.
+   */
+  private async sendControlAndVerify(
+    payload: Buffer,
+    predicate: (s: SaunaState) => boolean,
+    description: string,
+    retries = 1,
+  ): Promise<void> {
+    for (let attempt = 1; attempt <= retries + 1; attempt++) {
+      await this.sendControl(payload);
+      const confirmed = await this.awaitStateCondition(predicate, 7000);
+      if (confirmed) return;
+      if (attempt <= retries) {
+        this.log('Command "%s" not confirmed (attempt %d/%d), retrying', description, attempt, retries + 1);
+      }
+    }
+    throw new Error('Sauna did not confirm: ' + description);
   }
 
-  /** Set LED brightness. The LED shares the spectrum control (right=LED, left=current left). */
-  setLed(brightness: number): void {
-    // LED is controlled via the spectrum command with the LED value in the right position
-    // Based on the state format: LED is its own field, but control might use spectrum
-    // Try flag-style first; if that doesn't work we'll use spectrum
-    // Actually looking at the reference, there's no explicit LED control -- it appears
-    // to be controlled via spectrum. Let's use spectrum: right=LED, left=currentLeft
+  // --- Public control methods (all async, all verified) ---
+
+  async setPower(on: boolean): Promise<void> {
+    await this.sendControlAndVerify(
+      buildFlagControl(FLAG_POWER, on),
+      (s) => s.power === on,
+      'power ' + (on ? 'on' : 'off'),
+    );
+  }
+
+  async setTargetTemperature(tempF: number): Promise<void> {
+    await this.sendControlAndVerify(
+      buildTempControl(tempF),
+      (s) => Math.abs(s.setTemp - tempF) <= 1,
+      'setTemp ' + tempF + 'F',
+    );
+  }
+
+  async setInternalLight(on: boolean): Promise<void> {
+    await this.sendControlAndVerify(
+      buildFlagControl(FLAG_INTERNAL_LIGHT, on),
+      (s) => s.internalLight === on,
+      'internalLight ' + (on ? 'on' : 'off'),
+    );
+  }
+
+  async setExternalLight(on: boolean): Promise<void> {
+    await this.sendControlAndVerify(
+      buildFlagControl(FLAG_EXTERNAL_LIGHT, on),
+      (s) => s.externalLight === on,
+      'externalLight ' + (on ? 'on' : 'off'),
+    );
+  }
+
+  async setCelsius(celsius: boolean): Promise<void> {
+    await this.sendControlAndVerify(
+      buildFlagControl(FLAG_CF, celsius),
+      (s) => s.celsius === celsius,
+      'celsius ' + celsius,
+    );
+  }
+
+  async setTimer(minutes: number): Promise<void> {
+    // Timer state verification is approximate (setMinute may be 0 if not in pre-time mode)
+    await this.sendControl(buildMinuteControl(minutes));
+    this.log('Timer set to %d minutes (state verification skipped for timer)', minutes);
+  }
+
+  /** Set LED brightness. LED appears read-only via protocol (controlled from physical panel).
+   *  Best-effort: sends spectrum control. No state verification. */
+  async setLed(brightness: number): Promise<void> {
+    const b = Math.max(0, Math.min(255, Math.round(brightness)));
     const currentLeft = this._state?.left ?? 0;
-    this.sendControlPayload(buildSpectrumControl(
-      Math.max(0, Math.min(255, Math.round(brightness))),
-      currentLeft,
-    ));
+    await this.sendControl(buildSpectrumControl(b, currentLeft));
+    this.log('LED brightness command sent (%d/255) - state verification skipped (LED may be read-only)', b);
   }
 
-  setInternalLight(on: boolean): void {
-    this.sendControlPayload(buildFlagControl(FLAG_INTERNAL_LIGHT, on));
-  }
-
-  setExternalLight(on: boolean): void {
-    this.sendControlPayload(buildFlagControl(FLAG_EXTERNAL_LIGHT, on));
-  }
-
-  setTimer(minutes: number): void {
-    this.sendControlPayload(buildMinuteControl(minutes));
-  }
-
-  setCelsius(celsius: boolean): void {
-    this.sendControlPayload(buildFlagControl(FLAG_CF, celsius));
-  }
-
-  setHeaterIntensity(left: number, right: number): void {
-    this.sendControlPayload(buildSpectrumControl(
-      Math.max(0, Math.min(255, Math.round(right))),
-      Math.max(0, Math.min(255, Math.round(left))),
-    ));
+  async setHeaterIntensity(left: number, right: number): Promise<void> {
+    const r = Math.max(0, Math.min(255, Math.round(right)));
+    const l = Math.max(0, Math.min(255, Math.round(left)));
+    await this.sendControlAndVerify(
+      buildSpectrumControl(r, l),
+      (s) => Math.abs(s.right - r) <= 2 && Math.abs(s.left - l) <= 2,
+      'heaterIntensity left=' + l + ' right=' + r,
+    );
   }
 
   // --- Timers ---
