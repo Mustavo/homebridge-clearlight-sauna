@@ -5,3 +5,6 @@ tsconfig.json
 *.tgz
 .homebridge/
 node_modules/
+images/icon.png
+images/SaunaControls.png
+scripts/
