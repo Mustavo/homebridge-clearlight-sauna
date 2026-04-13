@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.7] - 2026-04-13
+
+### Fixed
+- Stale accessory cleanup now only runs when at least one sauna was discovered in the current scan. Previously, if the sauna was off or unreachable during a discovery interval, all cached accessories not yet matched to handlers were removed - causing valid accessories to disappear rather than show as unresponsive.
+
+---
+
 ## [2.1.6] - 2026-04-13
 
 ### Fixed

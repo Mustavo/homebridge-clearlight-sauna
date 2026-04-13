@@ -188,11 +188,17 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
     // This happens when a device was previously registered under a different UUID
     // (e.g. after a DID parsing fix changes the UUID). Without this, ghost accessories
     // accumulate in accessories.json and are restored as unresponsive devices on every restart.
-    for (const [uuid, accessory] of this.cachedAccessories) {
-      if (!this.handlers.has(uuid)) {
-        this.log.info('Removing stale cached accessory: %s (UUID: %s)', accessory.displayName, uuid);
-        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-        this.cachedAccessories.delete(uuid);
+    //
+    // Guard: only clean up when at least one device was discovered this run.
+    // If discovery returned nothing (sauna off or unreachable), preserve cached accessories
+    // so they remain visible in HomeKit rather than being silently removed.
+    if (discovered.length > 0) {
+      for (const [uuid, accessory] of this.cachedAccessories) {
+        if (!this.handlers.has(uuid)) {
+          this.log.info('Removing stale cached accessory: %s (UUID: %s)', accessory.displayName, uuid);
+          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.cachedAccessories.delete(uuid);
+        }
       }
     }
   }
