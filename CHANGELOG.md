@@ -2,6 +2,14 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.4] - 2026-04-13
+
+### Fixed
+- Discovery DID parsing: payload was being fully stringified with null bytes stripped, concatenating DID + passcode + server domain + firmware version into one malformed string. DID is now correctly read as the first null-terminated field only (max 44 chars).
+- Serial Number characteristic truncated to 64 chars (HAP limit) as a defensive measure.
+
+---
+
 ## [2.1.3] - 2026-04-13
 
 ### Fixed

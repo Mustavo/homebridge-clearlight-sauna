@@ -62,7 +62,9 @@ function runDiscovery(timeoutMs: number, stopOnFirst: boolean): Promise<Discover
       const result = parseFrame(msg);
       if (!result || result.frame.command !== Command.DISCOVER_RESPONSE) return;
 
-      const did = result.frame.payload.toString('ascii').replace(/\0/g, '');
+      // DID is the first null-terminated string in the payload (subsequent fields are passcode,
+      // server domain, firmware version etc.). Strip everything from the first \0 onward.
+      const did = result.frame.payload.toString('ascii').split('\0')[0].slice(0, 44);
       if (seen.has(did)) return;
       seen.add(did);
 

@@ -97,7 +97,7 @@ export class SaunaAccessoryHandler {
     this.accessory.getService(hap.Service.AccessoryInformation)!
       .setCharacteristic(hap.Characteristic.Manufacturer, 'Clearlight / Jacuzzi')
       .setCharacteristic(hap.Characteristic.Model, 'Sanctuary Infrared Sauna')
-      .setCharacteristic(hap.Characteristic.SerialNumber, this.mac ?? this.did ?? 'auto-discovered');
+      .setCharacteristic(hap.Characteristic.SerialNumber, (this.mac ?? this.did ?? 'auto-discovered').slice(0, 64));
 
     this.heaterService = this.accessory.getService(hap.Service.HeaterCooler)
       ?? this.accessory.addService(hap.Service.HeaterCooler, this.accessory.displayName);
