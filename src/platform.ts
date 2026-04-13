@@ -146,8 +146,16 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
 
     this.log.debug('Discovery found %d sauna(s)', discovered.length);
 
+    const matchedUuids = new Set<string>();
+
     for (const device of discovered) {
+      if (!device.did) {
+        this.log.warn('Ignoring discovery response with empty device ID (malformed payload)');
+        continue;
+      }
+
       const uuid = this.api.hap.uuid.generate('clearlight-' + device.did);
+      matchedUuids.add(uuid);
 
       const existingHandler = this.handlers.get(uuid);
       if (existingHandler) {
@@ -174,6 +182,18 @@ export class SaunaPlatform implements DynamicPlatformPlugin {
         onAuthenticated: (info) => this.writeDeviceState(info),
       });
       this.handlers.set(uuid, handler);
+    }
+
+    // Clean up stale cached accessories that were never matched to a handler.
+    // This happens when a device was previously registered under a different UUID
+    // (e.g. after a DID parsing fix changes the UUID). Without this, ghost accessories
+    // accumulate in accessories.json and are restored as unresponsive devices on every restart.
+    for (const [uuid, accessory] of this.cachedAccessories) {
+      if (!this.handlers.has(uuid)) {
+        this.log.info('Removing stale cached accessory: %s (UUID: %s)', accessory.displayName, uuid);
+        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+        this.cachedAccessories.delete(uuid);
+      }
     }
   }
 }

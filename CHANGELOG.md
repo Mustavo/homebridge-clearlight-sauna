@@ -2,6 +2,14 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.6] - 2026-04-13
+
+### Fixed
+- Double accessory registration: devices with empty DID (from the v2.1.4 parsing bug) were ignored rather than creating duplicate handlers.
+- Stale accessory cleanup: after each discovery run, any cached accessory not matched to a handler is now deregistered. This removes ghost accessories left over from DID format changes or previous buggy versions, preventing them from being restored as unresponsive devices on every restart.
+
+---
+
 ## [2.1.5] - 2026-04-13
 
 ### Fixed
