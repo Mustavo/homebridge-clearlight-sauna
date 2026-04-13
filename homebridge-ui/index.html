@@ -13,76 +13,237 @@
       color: var(--text-color, #333);
     }
 
-    #status-panel {
-      margin-bottom: 24px;
-    }
-
-    h3 {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.6;
-      margin: 0 0 10px 0;
-    }
-
+    /* ── Cards ───────────────────────────────────────────── */
     .device-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
       border: 1px solid var(--border-color, #e0e0e0);
       border-radius: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      cursor: pointer;
+      user-select: none;
       background: var(--card-bg, #fafafa);
     }
 
-    .device-icon {
-      font-size: 24px;
-      flex-shrink: 0;
-    }
+    .card-header:hover { background: var(--hover-bg, #f0f0f0); }
 
-    .device-info {
+    .card-icon { font-size: 20px; flex-shrink: 0; }
+
+    .card-title {
       flex: 1;
-      min-width: 0;
-    }
-
-    .device-name {
       font-weight: 600;
       font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
     }
 
-    .device-meta {
-      font-size: 12px;
-      opacity: 0.6;
-      margin-top: 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .card-meta {
+      font-size: 11px;
+      opacity: 0.55;
+      margin-top: 1px;
     }
 
-    .device-lastseen {
+    .card-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       flex-shrink: 0;
-      text-align: right;
-      font-size: 12px;
     }
 
+    .chevron {
+      font-size: 11px;
+      opacity: 0.4;
+      transition: transform 0.15s;
+    }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* ── Badges ──────────────────────────────────────────── */
     .badge {
       display: inline-block;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 10px;
       font-size: 11px;
       font-weight: 600;
-      margin-bottom: 3px;
     }
-
     .badge-recent  { background: #d4edda; color: #155724; }
     .badge-stale   { background: #fff3cd; color: #856404; }
     .badge-old     { background: #f8d7da; color: #721c24; }
     .badge-unknown { background: #e2e3e5; color: #383d41; }
+    .badge-new     { background: #cce5ff; color: #004085; }
+
+    /* ── Expanded form ───────────────────────────────────── */
+    .card-body {
+      display: none;
+      padding: 14px 16px 16px;
+      border-top: 1px solid var(--border-color, #e0e0e0);
+      background: var(--body-bg, #fff);
+    }
+    .card-body.open { display: block; }
+
+    .info-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .info-pill {
+      font-size: 11px;
+      color: var(--text-color, #333);
+      opacity: 0.55;
+    }
+    .info-pill strong { opacity: 1; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.7;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      padding: 6px 9px;
+      border: 1px solid var(--border-color, #d0d0d0);
+      border-radius: 5px;
+      font-size: 13px;
+      background: var(--input-bg, #fff);
+      color: var(--text-color, #333);
+      width: 100%;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #007aff;
+      box-shadow: 0 0 0 2px rgba(0,122,255,0.15);
+    }
+
+    /* ── Toggle switch ───────────────────────────────────── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 0;
+      grid-column: 1 / -1;
+    }
+
+    .toggle-label {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .toggle-label span { font-size: 12px; font-weight: 600; opacity: 0.7; }
+    .toggle-label small { font-size: 11px; opacity: 0.5; }
+
+    .toggle {
+      position: relative;
+      width: 38px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #ccc;
+      border-radius: 22px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-track::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      left: 3px;
+      top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-track { background: #34c759; }
+    .toggle input:checked + .toggle-track::before { transform: translateX(16px); }
+
+    /* ── Card footer ─────────────────────────────────────── */
+    .card-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-color, #eee);
+      margin-top: 14px;
+    }
+
+    .btn-remove {
+      font-size: 12px;
+      color: #c0392b;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      opacity: 0.7;
+    }
+    .btn-remove:hover { opacity: 1; background: #faeaea; }
+
+    /* ── Bottom actions ──────────────────────────────────── */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .btn-add {
+      font-size: 13px;
+      background: none;
+      border: 1px dashed var(--border-color, #ccc);
+      border-radius: 6px;
+      padding: 7px 14px;
+      cursor: pointer;
+      color: var(--text-color, #555);
+      opacity: 0.7;
+    }
+    .btn-add:hover { opacity: 1; border-color: #007aff; color: #007aff; }
+
+    .btn-save {
+      font-size: 13px;
+      font-weight: 600;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 20px;
+      cursor: pointer;
+      margin-left: auto;
+    }
+    .btn-save:hover { background: #0066dd; }
+    .btn-save:disabled { background: #aaa; cursor: default; }
+
+    /* ── States ──────────────────────────────────────────── */
+    .loading { opacity: 0.5; font-size: 13px; padding: 8px 0; }
 
     .empty-state {
       padding: 16px;
@@ -91,93 +252,333 @@
       font-size: 13px;
       border: 1px dashed var(--border-color, #ccc);
       border-radius: 8px;
+      margin-bottom: 10px;
     }
 
-    .loading {
-      opacity: 0.5;
-      font-size: 13px;
-      padding: 8px 0;
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      opacity: 0.45;
+      margin: 16px 0 8px;
     }
+    .section-label:first-child { margin-top: 0; }
   </style>
 </head>
 <body>
-  <div id="status-panel">
-    <h3>Sauna Status</h3>
-    <div id="status-content" class="loading">Loading device status...</div>
-  </div>
+  <div id="root"><div class="loading">Loading saunas...</div></div>
 
   <script>
-    function relativeTime(isoString) {
-      const now = Date.now();
-      const then = new Date(isoString).getTime();
-      const diffMs = now - then;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHrs  = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
+    // ── Helpers ────────────────────────────────────────────
 
-      if (diffMins < 1)   return 'Just now';
-      if (diffMins < 60)  return `${diffMins}m ago`;
-      if (diffHrs  < 24)  return `${diffHrs}h ago`;
-      if (diffDays < 7)   return `${diffDays}d ago`;
-      return new Date(isoString).toLocaleDateString();
+    function esc(str) {
+      return String(str ?? '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
-    function badgeFor(isoString) {
-      if (!isoString) return { cls: 'badge-unknown', label: 'Never seen' };
-      const diffHrs = (Date.now() - new Date(isoString).getTime()) / 3600000;
-      if (diffHrs < 1)  return { cls: 'badge-recent', label: 'Online recently' };
-      if (diffHrs < 24) return { cls: 'badge-stale',  label: 'Today' };
-      if (diffHrs < 168) return { cls: 'badge-stale', label: 'This week' };
+    function relativeTime(iso) {
+      if (!iso) return '—';
+      const diff = Date.now() - new Date(iso).getTime();
+      const m = Math.floor(diff / 60000);
+      const h = Math.floor(diff / 3600000);
+      const d = Math.floor(diff / 86400000);
+      if (m < 1)  return 'Just now';
+      if (m < 60) return `${m}m ago`;
+      if (h < 24) return `${h}h ago`;
+      if (d < 7)  return `${d}d ago`;
+      return new Date(iso).toLocaleDateString();
+    }
+
+    function badge(iso) {
+      if (!iso) return { cls: 'badge-unknown', label: 'Never seen' };
+      const h = (Date.now() - new Date(iso).getTime()) / 3600000;
+      if (h < 1)   return { cls: 'badge-recent', label: 'Online recently' };
+      if (h < 24)  return { cls: 'badge-stale',  label: 'Today' };
+      if (h < 168) return { cls: 'badge-stale',  label: 'This week' };
       return { cls: 'badge-old', label: 'Not seen in a while' };
     }
 
-    function renderStatus(state) {
-      const container = document.getElementById('status-content');
-      const keys = Object.keys(state);
+    function macMatch(a, b) {
+      if (!a || !b) return false;
+      return a.toLowerCase().replace(/-/g,':') === b.toLowerCase().replace(/-/g,':');
+    }
 
-      if (keys.length === 0) {
-        container.innerHTML = '<div class="empty-state">No saunas have connected yet. Check that your sauna is on and connected to WiFi.</div>';
+    // ── State ──────────────────────────────────────────────
+
+    let devices = [];   // merged list: { configIdx, mac, did, ip, lastSeen, ...configFields }
+    let pluginConfigs = [];
+    let platformConfig = {};
+
+    // ── Merge discovered + configured ─────────────────────
+
+    function buildDeviceList(discovered, configDevices) {
+      const list = [];
+      const usedDiscovered = new Set();
+
+      // Start from config entries, enrich with discovered state
+      configDevices.forEach((cfg, idx) => {
+        const match = discovered.find(d =>
+          (cfg.mac && macMatch(cfg.mac, d.mac)) ||
+          (cfg.did && cfg.did === d.did)
+        );
+        if (match) usedDiscovered.add(match.mac ?? match.did ?? match.ip);
+        list.push({
+          _configIdx: idx,
+          mac:  cfg.mac  ?? match?.mac  ?? null,
+          did:  cfg.did  ?? match?.did  ?? null,
+          ip:   match?.ip ?? null,
+          lastSeen: match?.lastSeen ?? null,
+          name: cfg.name ?? '',
+          minTemp: cfg.minTemp ?? '',
+          maxTemp: cfg.maxTemp ?? '',
+          defaultTemp: cfg.defaultTemp ?? '',
+          internalLightName: cfg.internalLightName ?? '',
+          externalLightName: cfg.externalLightName ?? '',
+          atTempSensor: cfg.atTempSensor ?? false,
+        });
+      });
+
+      // Append discovered devices not yet in config
+      discovered.forEach(d => {
+        const key = d.mac ?? d.did ?? d.ip;
+        if (!usedDiscovered.has(key)) {
+          list.push({
+            _configIdx: null,
+            mac: d.mac ?? null,
+            did: d.did ?? null,
+            ip:  d.ip  ?? null,
+            lastSeen: d.lastSeen ?? null,
+            name: d.name ?? '',
+            minTemp: '', maxTemp: '', defaultTemp: '',
+            internalLightName: '', externalLightName: '',
+            atTempSensor: false,
+          });
+        }
+      });
+
+      return list;
+    }
+
+    // ── Read form values back into device entry ────────────
+
+    function readCard(el, device) {
+      device.name              = el.querySelector('[data-field="name"]').value.trim();
+      device.minTemp           = parseFloat(el.querySelector('[data-field="minTemp"]').value) || '';
+      device.maxTemp           = parseFloat(el.querySelector('[data-field="maxTemp"]').value) || '';
+      device.defaultTemp       = parseFloat(el.querySelector('[data-field="defaultTemp"]').value) || '';
+      device.internalLightName = el.querySelector('[data-field="internalLightName"]').value.trim();
+      device.externalLightName = el.querySelector('[data-field="externalLightName"]').value.trim();
+      device.atTempSensor      = el.querySelector('[data-field="atTempSensor"]').checked;
+    }
+
+    // ── Render ─────────────────────────────────────────────
+
+    function renderAll() {
+      const root = document.getElementById('root');
+
+      if (devices.length === 0) {
+        root.innerHTML = `
+          <div class="empty-state">No saunas found yet. Make sure your sauna is on and connected to WiFi, then restart Homebridge to trigger discovery.</div>
+          <div class="actions">
+            <button class="btn-add" onclick="addBlank()">+ Add sauna manually</button>
+          </div>`;
         return;
       }
 
-      container.innerHTML = keys.map(key => {
-        const d = state[key];
-        const badge = badgeFor(d.lastSeen);
-        const metaParts = [];
-        if (d.mac) metaParts.push(`MAC: ${d.mac}`);
-        if (d.ip)  metaParts.push(`IP: ${d.ip}`);
+      const configured = devices.filter(d => d._configIdx !== null);
+      const discovered  = devices.filter(d => d._configIdx === null);
 
-        return `
-          <div class="device-card">
-            <div class="device-icon">🧖</div>
-            <div class="device-info">
-              <div class="device-name">${escapeHtml(d.name || 'Sauna')}</div>
-              <div class="device-meta">${metaParts.map(escapeHtml).join(' &middot; ')}</div>
+      let html = '';
+
+      if (configured.length) {
+        html += `<div class="section-label">Configured</div>`;
+        configured.forEach((d, i) => { html += renderCard(d, devices.indexOf(d)); });
+      }
+
+      if (discovered.length) {
+        html += `<div class="section-label">Discovered — not yet configured</div>`;
+        discovered.forEach(d => { html += renderCard(d, devices.indexOf(d)); });
+      }
+
+      html += `
+        <div class="actions">
+          <button class="btn-add" onclick="addBlank()">+ Add sauna manually</button>
+          <button class="btn-save" id="save-btn" onclick="save()">Save</button>
+        </div>`;
+
+      root.innerHTML = html;
+
+      // Re-attach toggle listeners
+      root.querySelectorAll('.card-header').forEach(h => {
+        h.addEventListener('click', () => toggleCard(h.closest('.device-card')));
+      });
+    }
+
+    function renderCard(d, idx) {
+      const b = d.lastSeen ? badge(d.lastSeen) : { cls: 'badge-new', label: 'Not yet seen' };
+      const subtitle = [d.mac && `MAC: ${d.mac}`, d.ip && `IP: ${d.ip}`].filter(Boolean).join(' · ');
+      const displayName = d.name || d.mac || d.did || 'New Sauna';
+
+      return `
+        <div class="device-card" data-idx="${idx}">
+          <div class="card-header">
+            <div class="card-icon">🧖</div>
+            <div style="flex:1;min-width:0">
+              <div class="card-title">${esc(displayName)}</div>
+              ${subtitle ? `<div class="card-meta">${esc(subtitle)}</div>` : ''}
             </div>
-            <div class="device-lastseen">
-              <span class="badge ${badge.cls}">${badge.label}</span>
-              <div>${d.lastSeen ? relativeTime(d.lastSeen) : '—'}</div>
+            <div class="card-right">
+              <span class="badge ${b.cls}">${b.label}</span>
+              ${d.lastSeen ? `<span style="font-size:11px;opacity:0.45">${relativeTime(d.lastSeen)}</span>` : ''}
+              <span class="chevron">▼</span>
             </div>
           </div>
-        `;
-      }).join('');
+          <div class="card-body">
+            ${subtitle ? `<div class="info-row">
+              ${d.mac ? `<span class="info-pill"><strong>MAC</strong> ${esc(d.mac)}</span>` : ''}
+              ${d.did ? `<span class="info-pill"><strong>Device ID</strong> ${esc(d.did)}</span>` : ''}
+              ${d.ip  ? `<span class="info-pill"><strong>IP</strong> ${esc(d.ip)}</span>` : ''}
+            </div>` : ''}
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Sauna Name</label>
+                <input type="text" data-field="name" placeholder="Sauna" value="${esc(d.name)}">
+              </div>
+              <div class="form-group">
+                <label>Min Temperature (°C)</label>
+                <input type="number" data-field="minTemp" placeholder="16" min="10" max="40" value="${esc(d.minTemp)}">
+              </div>
+              <div class="form-group">
+                <label>Max Temperature (°C)</label>
+                <input type="number" data-field="maxTemp" placeholder="66" min="40" max="82" value="${esc(d.maxTemp)}">
+              </div>
+              <div class="form-group">
+                <label>Default Temperature (°C)</label>
+                <input type="number" data-field="defaultTemp" placeholder="Optional" min="16" max="82" value="${esc(d.defaultTemp)}">
+              </div>
+              <div class="form-group">
+                <label>Internal Light Name</label>
+                <input type="text" data-field="internalLightName" placeholder="Internal Light" value="${esc(d.internalLightName)}">
+              </div>
+              <div class="form-group">
+                <label>External Light Name</label>
+                <input type="text" data-field="externalLightName" placeholder="External Light" value="${esc(d.externalLightName)}">
+              </div>
+              <div class="toggle-row">
+                <div class="toggle-label">
+                  <span>At Temperature Sensor</span>
+                  <small>Occupancy sensor + push notification when sauna is ready</small>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" data-field="atTempSensor" ${d.atTempSensor ? 'checked' : ''}>
+                  <div class="toggle-track"></div>
+                </label>
+              </div>
+            </div>
+            <div class="card-footer">
+              <button class="btn-remove" onclick="removeDevice(${idx})">Remove</button>
+            </div>
+          </div>
+        </div>`;
     }
 
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    // ── Interactions ───────────────────────────────────────
+
+    function toggleCard(cardEl) {
+      const body    = cardEl.querySelector('.card-body');
+      const chevron = cardEl.querySelector('.chevron');
+      const isOpen  = body.classList.contains('open');
+      body.classList.toggle('open', !isOpen);
+      chevron.classList.toggle('open', !isOpen);
     }
+
+    function addBlank() {
+      devices.push({
+        _configIdx: null,
+        mac: null, did: null, ip: null, lastSeen: null,
+        name: '', minTemp: '', maxTemp: '', defaultTemp: '',
+        internalLightName: '', externalLightName: '',
+        atTempSensor: false,
+      });
+      renderAll();
+      // Auto-open the new card
+      const cards = document.querySelectorAll('.device-card');
+      if (cards.length) toggleCard(cards[cards.length - 1]);
+    }
+
+    function removeDevice(idx) {
+      devices.splice(idx, 1);
+      renderAll();
+    }
+
+    async function save() {
+      const btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      // Read current form values back into device list
+      document.querySelectorAll('.device-card').forEach(cardEl => {
+        const idx = parseInt(cardEl.dataset.idx, 10);
+        if (!isNaN(idx) && devices[idx]) readCard(cardEl, devices[idx]);
+      });
+
+      // Build new devices array for config (only include entries with at least a mac/did/name)
+      const configDevices = devices
+        .filter(d => d.mac || d.did || d.name)
+        .map(d => {
+          const entry = {};
+          if (d.mac)  entry.mac  = d.mac;
+          if (d.did)  entry.did  = d.did;
+          if (d.name) entry.name = d.name;
+          if (d.minTemp !== '')     entry.minTemp     = Number(d.minTemp);
+          if (d.maxTemp !== '')     entry.maxTemp     = Number(d.maxTemp);
+          if (d.defaultTemp !== '') entry.defaultTemp = Number(d.defaultTemp);
+          if (d.internalLightName)  entry.internalLightName = d.internalLightName;
+          if (d.externalLightName)  entry.externalLightName = d.externalLightName;
+          if (d.atTempSensor)       entry.atTempSensor = true;
+          return entry;
+        });
+
+      try {
+        // Update the platform config and write back
+        platformConfig.devices = configDevices;
+        const updatedConfigs = pluginConfigs.map(c =>
+          c.platform === 'ClearlightSauna' ? platformConfig : c
+        );
+        await homebridge.updatePluginConfig(updatedConfigs);
+        await homebridge.savePluginConfig();
+        homebridge.toast.success('Sauna config saved.');
+
+        // Rebuild _configIdx after save
+        devices.forEach((d, i) => { d._configIdx = i; });
+        renderAll();
+      } catch (err) {
+        homebridge.toast.error('Save failed: ' + err.message);
+      } finally {
+        const b = document.getElementById('save-btn');
+        if (b) { b.disabled = false; b.textContent = 'Save'; }
+      }
+    }
+
+    // ── Boot ───────────────────────────────────────────────
 
     (async () => {
       try {
-        const status = await homebridge.request('/device-status');
-        renderStatus(status);
+        const [discovered, configs] = await Promise.all([
+          homebridge.request('/discovered-devices'),
+          homebridge.getPluginConfig(),
+        ]);
+
+        pluginConfigs   = configs;
+        platformConfig  = configs.find(c => c.platform === 'ClearlightSauna') ?? { platform: 'ClearlightSauna', name: 'Clearlight Sauna' };
+        const configDevices = Array.isArray(platformConfig.devices) ? platformConfig.devices : [];
+
+        devices = buildDeviceList(discovered, configDevices);
+        renderAll();
       } catch (err) {
-        document.getElementById('status-content').innerHTML =
-          '<div class="empty-state">Could not load device status.</div>';
+        document.getElementById('root').innerHTML =
+          `<div class="empty-state">Could not load sauna status: ${esc(err.message)}</div>`;
       }
     })();
   </script>

@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.2] - 2026-04-13
+
+### Changed
+- Custom UI completely replaced with interactive config panel: discovered saunas appear as collapsible cards pre-populated with MAC/IP/last-seen. Each card exposes all per-device settings (name, temp range, light names, at-temp sensor toggle). Save writes directly back to the Homebridge config — no manual MAC lookup required.
+
+---
+
 ## [2.1.1] - 2026-04-13
 
 ### Changed
