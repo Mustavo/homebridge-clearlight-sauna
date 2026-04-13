@@ -2,6 +2,13 @@
 
 All notable changes to `homebridge-clearlight-sauna` are documented here.
 
+## [2.1.3] - 2026-04-13
+
+### Fixed
+- Custom UI file moved to homebridge-ui/public/index.html (correct path for Homebridge Config UI X).
+
+---
+
 ## [2.1.2] - 2026-04-13
 
 ### Changed
