@@ -159,6 +159,28 @@ npm run watch     # compile on change
 npm run sauna     # CLI tool (from source)
 ```
 
+## Release Checklist
+
+Publishing from the monorepo works via a clean clone at `/tmp/sauna-release`. Steps every release:
+
+```bash
+# 1. Bump version in package.json + add CHANGELOG entry, sync to /tmp/sauna-release
+# 2. Commit, tag, push to GitHub
+git -C /tmp/sauna-release add -A
+git -C /tmp/sauna-release commit -m "vX.Y.Z - summary"
+git -C /tmp/sauna-release tag vX.Y.Z
+git -C /tmp/sauna-release push origin master --tags
+
+# 3. Create a GitHub Release (required — Homebridge reads release notes from here)
+gh release create vX.Y.Z --repo Mustavo/homebridge-clearlight-sauna --title "vX.Y.Z" --notes "..."
+
+# 4. Publish to npm (from the clean clone, not the monorepo)
+cd /tmp/sauna-release
+npm publish
+```
+
+> If the GitHub Release is missing, Homebridge shows "Could not retrieve release notes" in the update modal.
+
 ## Licence
 
 ISC
